@@ -1,12 +1,12 @@
-name: Commit lint
+name: Release
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
-  commitlint:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -14,7 +14,5 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Conventional Commitlint
-        uses: opensource-nepal/commitlint@v1.2.0
-        with:
-          verbose: true
+      - name: Semantic Release Action
+        uses: codfish/semantic-release-action@v1
