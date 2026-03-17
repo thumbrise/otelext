@@ -11,4 +11,4 @@ tasks:
     desc: Run tests
     cmds:
       - go test ./... -v -tags=test
-      - go test ./... -v -tags=test run=NONE -bench=. -benchmem
+      - go test ./... -v -tags=test -run=NONE -bench=. -benchmem
