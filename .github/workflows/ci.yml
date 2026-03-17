@@ -105,4 +105,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_REF: ${{ github.event.pull_request.head.ref }}
         run: npx semantic-release --branches "$BRANCH_REF" --dry-run
