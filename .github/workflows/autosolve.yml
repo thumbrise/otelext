@@ -23,6 +23,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      packages: read
 
     steps:
       - name: Checkout repository
