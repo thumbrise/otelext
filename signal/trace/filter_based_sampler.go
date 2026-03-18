@@ -34,7 +34,6 @@ func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters)
 	psc := trace.SpanContextFromContext(parameters.ParentContext)
 	return sdktrace.SamplingResult{
 		Decision:   sdktrace.RecordAndSample,
-		Attributes: parameters.Attributes,
 		Tracestate: psc.TraceState(),
 	}
 }
