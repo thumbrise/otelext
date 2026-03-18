@@ -12,33 +12,23 @@ on:
   pull_request_review:
     types: [submitted]
 
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
-  resolve:
-
-    if: |
-      github.event.label.name == 'autosolve' ||
-      (github.event.comment && contains(github.event.comment.body, '@autosolve'))
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      packages: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run OpenHands Resolver in Docker
-        run: |
-          docker run --rm \
-            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-            -e PAT_TOKEN=${{ secrets.PAT_TOKEN }} \
-            -e LLM_MODEL=${{ secrets.LLM_MODEL }} \
-            -e LLM_API_KEY=${{ secrets.LLM_API_KEY }} \
-            -e LLM_BASE_URL=${{ secrets.LLM_BASE_URL }} \
-            -v ${{ github.workspace }}:/workspace \
-            ghcr.io/openhands/openhands-resolver:latest \
-            python -m openhands_resolver.resolve_issues \
-              --repo ${{ github.repository }} \
-              --issue-numbers ${{ github.event.issue.number || github.event.pull_request.number }}
+  call-openhands-resolver:
+    uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
+    with:
+      macro: '@autosolve'
+      max_iterations: ${{ fromJson(vars.OPENHANDS_MAX_ITER || 50) }}
+      base_container_image: ${{ vars.OPENHANDS_BASE_CONTAINER_IMAGE || '' }}
+      LLM_MODEL: ${{ vars.LLM_MODEL || 'anthropic/claude-sonnet-4-20250514' }}
+      target_branch: ${{ vars.TARGET_BRANCH || 'main' }}
+      runner: ${{ vars.TARGET_RUNNER }}
+    secrets:
+      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+      PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
