@@ -9,33 +9,41 @@ on:
 jobs:
   ask-goose:
     if: |
-      contains(github.event.label.name, 'autosolve') || 
+      contains(github.event.label.name, 'autosolve') ||
       contains(github.event.comment.body, '@goose')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Go
+        uses: actions/setup-go@v6
         with:
-          python-version: '3.12'
+          go-version: 1.25.x
 
-      - name: Install goose
+      - name: Install Goose
         run: |
-          pip install --upgrade pip
-          pip install goose-ai
+          curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Run goose on issue
+      - name: Verify Goose
+        run: goose --version
+
+      - name: Run Goose on issue
         run: |
           goose run \
             --issue ${{ github.event.issue.number }} \
             --model openrouter/deepseek-coder \
-            --validation "New tests satisfy requirements and all tests pass. Commit with conventional commit message." \
+            --validation "New tests satisfy requirements and all tests pass. Commit with conventional commit message. The code must follow Go best practices and existing project style." \
             --yes
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
