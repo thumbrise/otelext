@@ -29,10 +29,22 @@ jobs:
         with:
           go-version: 1.25.x
 
-      - name: Install Goose
+      - name: Install goose CLI
         run: |
-          curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          mkdir -p /home/runner/.local/bin
+          curl -L -o goose.tar.bz2 https://github.com/block/goose/releases/download/stable/goose-x86_64-unknown-linux-gnu.tar.bz2
+          tar -xjf goose.tar.bz2 -C /home/runner/.local/bin goose
+          chmod +x /home/runner/.local/bin/goose
+          echo "/home/runner/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure goose
+        run: |
+          mkdir -p ~/.config/goose
+          cat <<EOF > ~/.config/goose/config.yaml
+          GOOSE_PROVIDER: openrouter
+          GOOSE_MODEL: openrouter/deepseek-coder
+          keyring: false
+          EOF
 
       - name: Verify Goose
         run: goose --version
