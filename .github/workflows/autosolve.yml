@@ -21,7 +21,6 @@ jobs:
   call-openhands-resolver:
     uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
     with:
-      macro: '@autosolve'
       LLM_MODEL: 'openrouter/auto'
       target_branch: 'main'
     secrets:
