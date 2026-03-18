@@ -3,6 +3,7 @@ package signal
 import (
 	"context"
 	"log"
+	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -14,11 +15,15 @@ type Filter interface {
 }
 
 var (
+	mu         sync.RWMutex
 	filters    []Filter
 	filterKeys = make(map[string]bool)
 )
 
 func RegisterFilter(filter Filter) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	// Check for key collision with existing filters
 	newKey := filter.Key(context.Background())
 	if filterKeys[newKey] {
@@ -31,9 +36,16 @@ func RegisterFilter(filter Filter) {
 }
 
 func RegisteredFilters() []Filter {
+	mu.RLock()
+	defer mu.RUnlock()
+
 	return filters
 }
 
 func ClearFilters() {
+	mu.Lock()
+	defer mu.Unlock()
+
 	filters = make([]Filter, 0)
+	filterKeys = make(map[string]bool)
 }
