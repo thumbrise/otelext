@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p /home/runner/.local/bin
           curl -L -o goose.tar.bz2 https://github.com/block/goose/releases/download/stable/goose-x86_64-unknown-linux-gnu.tar.bz2
-          tar -xjf goose.tar.bz2 -C /home/runner/.local/bin goose
+          tar -xjf goose.tar.bz2 -C /home/runner/.local/bin
           chmod +x /home/runner/.local/bin/goose
           echo "/home/runner/.local/bin" >> $GITHUB_PATH
 
