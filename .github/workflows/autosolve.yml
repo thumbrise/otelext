@@ -36,17 +36,16 @@ jobs:
       - name: Install OpenHands Resolver
         run: pip install openhands-resolver
 
-      - name: Run resolver
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_USERNAME: ${{ github.actor }}
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-          PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      - name: Run OpenHands Resolver in Docker
         run: |
-          python -m openhands_resolver.resolve_issues \
-            --repo ${{ github.repository }} \
-            --issue-numbers ${{ github.event.issue.number || github.event.pull_request.number }} \
-            --token ${{ secrets.PAT_TOKEN }}
+          docker run --rm \
+            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            -e PAT_TOKEN=${{ secrets.PAT_TOKEN }} \
+            -e LLM_MODEL=${{ secrets.LLM_MODEL }} \
+            -e LLM_API_KEY=${{ secrets.LLM_API_KEY }} \
+            -e LLM_BASE_URL=${{ secrets.LLM_BASE_URL }} \
+            -v ${{ github.workspace }}:/workspace \
+            ghcr.io/openhands/openhands-resolver:latest \
+            python -m openhands_resolver.resolve_issues \
+              --repo ${{ github.repository }} \
+              --issue-numbers ${{ github.event.issue.number || github.event.pull_request.number }}
