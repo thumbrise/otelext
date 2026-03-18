@@ -21,11 +21,13 @@ var (
 )
 
 func RegisterFilter(filter Filter) {
+	// Evaluate key before acquiring lock to avoid deadlock if Key() calls back into the registry
+	newKey := filter.Key(context.Background())
+
 	mu.Lock()
 	defer mu.Unlock()
 
 	// Check for key collision with existing filters
-	newKey := filter.Key(context.Background())
 	if filterKeys[newKey] {
 		log.Printf("WARNING: Filter key collision detected: '%s'. Multiple filters with the same key may cause unexpected behavior during debugging", newKey)
 	} else {
