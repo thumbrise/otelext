@@ -32,6 +32,7 @@ func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters)
 
 	// No filters dropped, record and sample
 	psc := trace.SpanContextFromContext(parameters.ParentContext)
+
 	return sdktrace.SamplingResult{
 		Decision:   sdktrace.RecordAndSample,
 		Tracestate: psc.TraceState(),
@@ -40,6 +41,7 @@ func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters)
 
 func (s FilterBasedSampler) Description() string {
 	registered := signal.RegisteredFilters()
+
 	descriptions := make([]string, 0, len(registered))
 	for _, f := range registered {
 		descriptions = append(descriptions, f.Description(context.Background()))

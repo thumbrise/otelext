@@ -5,94 +5,102 @@ import (
 
 	"github.com/thumbrise/otelext/signal/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
-	"github.com/thumbrise/otelext/internal/mock"
 )
 
-func TestCompositeSampler(t *testing.T) {
-	tests := []struct {
-		name     string
-		samplers []sdktrace.Sampler
-		params   sdktrace.SamplingParameters
-		want     sdktrace.SamplingDecision
-	}{
-		{
-			name:     "no samplers",
-			samplers: []sdktrace.Sampler{},
-			params:   sdktrace.SamplingParameters{},
-			want:     sdktrace.Drop,
-		},
-		{
-			name: "first sampler drops",
-			samplers: []sdktrace.Sampler{
-				mock.NewSampler(sdktrace.Drop, "drop sampler"),
-				mock.NewSampler(sdktrace.RecordAndSample, "record sampler"),
-			},
-			params: sdktrace.SamplingParameters{},
-			want:   sdktrace.Drop,
-		},
-		{
-			name: "all samplers record and sample",
-			samplers: []sdktrace.Sampler{
-				mock.NewSampler(sdktrace.RecordAndSample, "record sampler 1"),
-				mock.NewSampler(sdktrace.RecordAndSample, "record sampler 2"),
-			},
-			params: sdktrace.SamplingParameters{},
-			want:   sdktrace.RecordAndSample,
-		},
-		{
-			name: "mixed decisions",
-			samplers: []sdktrace.Sampler{
-				mock.NewSampler(sdktrace.RecordOnly, "record only"),
-				mock.NewSampler(sdktrace.Drop, "drop"),
-				mock.NewSampler(sdktrace.RecordAndSample, "record and sample"),
-			},
-			params: sdktrace.SamplingParameters{},
-			want:   sdktrace.Drop,
-		},
-	}
+type staticSampler struct {
+	d    sdktrace.SamplingDecision
+	name string
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sampler := trace.NewCompositeSampler(tt.samplers...)
-			result := sampler.ShouldSample(tt.params)
+func (s staticSampler) ShouldSample(parameters sdktrace.SamplingParameters) sdktrace.SamplingResult {
+	return sdktrace.SamplingResult{Decision: s.d}
+}
 
-			if result.Decision != tt.want {
-				t.Errorf("CompositeSampler.ShouldSample() = %v, want %v", result.Decision, tt.want)
-			}
-		})
+func (s staticSampler) Description() string {
+	return s.name
+}
+
+func TestCompositeSampler_MixedDecisions_RecordOnlyThenRecordAndSample(t *testing.T) {
+	s1 := staticSampler{d: sdktrace.RecordOnly, name: "RecordOnly"}
+	s2 := staticSampler{d: sdktrace.RecordAndSample, name: "RecordAndSample"}
+	cs := trace.NewCompositeSampler(s1, s2)
+
+	res := cs.ShouldSample(sdktrace.SamplingParameters{})
+	if res.Decision != sdktrace.RecordOnly {
+		t.Fatalf("expected RecordOnly, got %v", res.Decision)
 	}
 }
 
-func TestCompositeSamplerDescription(t *testing.T) {
-	tests := []struct {
-		name     string
-		samplers []sdktrace.Sampler
-		want     string
-	}{
-		{
-			name:     "no samplers",
-			samplers: []sdktrace.Sampler{},
-			want:     "no samplers passed in composite sampler",
-		},
-		{
-			name: "with samplers",
-			samplers: []sdktrace.Sampler{
-				mock.NewSampler(sdktrace.RecordAndSample, "sampler1"),
-				mock.NewSampler(sdktrace.RecordAndSample, "sampler2"),
-			},
-			want: "Decorates chain of samplers: sampler1\nsampler2",
-		},
+func TestCompositeSampler_MixedDecisions_RecordAndSampleThenRecordOnly(t *testing.T) {
+	s1 := staticSampler{d: sdktrace.RecordAndSample, name: "RecordAndSample"}
+	s2 := staticSampler{d: sdktrace.RecordOnly, name: "RecordOnly"}
+	cs := trace.NewCompositeSampler(s1, s2)
+
+	res := cs.ShouldSample(sdktrace.SamplingParameters{})
+	if res.Decision != sdktrace.RecordOnly {
+		t.Fatalf("expected RecordOnly, got %v", res.Decision)
 	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sampler := trace.NewCompositeSampler(tt.samplers...)
-			got := sampler.Description()
+func TestCompositeSampler_MixedDecisions_RecordAndSampleBoth(t *testing.T) {
+	s1 := staticSampler{d: sdktrace.RecordAndSample, name: "R&A1"}
+	s2 := staticSampler{d: sdktrace.RecordAndSample, name: "R&A2"}
+	cs := trace.NewCompositeSampler(s1, s2)
 
-			if got != tt.want {
-				t.Errorf("CompositeSampler.Description() = %q, want %q", got, tt.want)
-			}
-		})
+	res := cs.ShouldSample(sdktrace.SamplingParameters{})
+	if res.Decision != sdktrace.RecordAndSample {
+		t.Fatalf("expected RecordAndSample, got %v", res.Decision)
+	}
+}
+
+func TestCompositeSampler_MixedDecisions_WithDrop(t *testing.T) {
+	s1 := staticSampler{d: sdktrace.RecordAndSample, name: "R&A"}
+	s2 := staticSampler{d: sdktrace.Drop, name: "Drop"}
+	cs := trace.NewCompositeSampler(s1, s2)
+
+	res := cs.ShouldSample(sdktrace.SamplingParameters{})
+	if res.Decision != sdktrace.Drop {
+		t.Fatalf("expected Drop, got %v", res.Decision)
+	}
+}
+
+func TestCompositeSampler_NoSamplers(t *testing.T) {
+	cs := trace.NewCompositeSampler()
+
+	res := cs.ShouldSample(sdktrace.SamplingParameters{})
+	if res.Decision != sdktrace.Drop {
+		t.Fatalf("expected Drop, got %v", res.Decision)
+	}
+}
+
+func TestCompositeSampler_Description(t *testing.T) {
+	t.Run("no samplers", func(t *testing.T) {
+		cs := trace.NewCompositeSampler()
+		got := cs.Description()
+		want := "no samplers passed in composite sampler"
+		if got != want {
+			t.Fatalf("Description() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("with samplers", func(t *testing.T) {
+		s1 := staticSampler{d: sdktrace.RecordAndSample, name: "sampler1"}
+		s2 := staticSampler{d: sdktrace.RecordAndSample, name: "sampler2"}
+		cs := trace.NewCompositeSampler(s1, s2)
+		got := cs.Description()
+		want := "Decorates chain of samplers: sampler1\nsampler2"
+		if got != want {
+			t.Fatalf("Description() = %q, want %q", got, want)
+		}
+	})
+}
+
+// TestSamplingDecisionOrdering asserts the OTel SDK enum ordering that
+// CompositeSampler's restrict-only logic depends on:
+// Drop(0) < RecordOnly(1) < RecordAndSample(2).
+func TestSamplingDecisionOrdering(t *testing.T) {
+	if !(sdktrace.Drop < sdktrace.RecordOnly && sdktrace.RecordOnly < sdktrace.RecordAndSample) {
+		t.Fatalf("unexpected SamplingDecision ordering: Drop=%d, RecordOnly=%d, RecordAndSample=%d",
+			sdktrace.Drop, sdktrace.RecordOnly, sdktrace.RecordAndSample)
 	}
 }
