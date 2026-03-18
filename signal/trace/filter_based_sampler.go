@@ -17,9 +17,11 @@ func NewFilterBasedSampler() *FilterBasedSampler {
 }
 
 func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters) sdktrace.SamplingResult {
+	attrs := attribute.NewSet(parameters.Attributes...)
+
 	// Check if any filter wants to drop the trace
 	for _, f := range signal.RegisteredFilters() {
-		if f.ShouldDrop(parameters.ParentContext, attribute.NewSet(parameters.Attributes...)) {
+		if f.ShouldDrop(parameters.ParentContext, attrs) {
 			return sdktrace.SamplingResult{
 				Decision:   sdktrace.Drop,
 				Attributes: nil,
