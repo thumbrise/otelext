@@ -33,8 +33,9 @@ func TestFilterBasedTraceSampler(t *testing.T) {
 		t.Errorf("Expected RecordAndSample, got %v", result.Decision)
 	}
 
-	if len(result.Attributes) != 1 {
-		t.Errorf("Expected 1 attribute, got %d", len(result.Attributes))
+	// SamplingResult.Attributes are additional attributes per OTel spec, sampler should not echo back input
+	if result.Attributes != nil {
+		t.Errorf("Expected nil additional attributes, got %v", result.Attributes)
 	}
 }
 
@@ -197,8 +198,8 @@ func TestFilterBasedTraceSamplerAllFiltersPass(t *testing.T) {
 		t.Errorf("Expected RecordAndSample when all filters pass, got %v", result.Decision)
 	}
 
-	// Attributes should be preserved
-	if len(result.Attributes) != 1 {
-		t.Errorf("Expected 1 attribute when recording, got %d", len(result.Attributes))
+	// SamplingResult.Attributes are additional attributes per OTel spec, sampler should not echo back input
+	if result.Attributes != nil {
+		t.Errorf("Expected nil additional attributes, got %v", result.Attributes)
 	}
 }
