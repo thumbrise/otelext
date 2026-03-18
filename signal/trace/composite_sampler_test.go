@@ -115,7 +115,7 @@ func TestCompositeSampler_Description(t *testing.T) {
 // CompositeSampler's restrict-only logic depends on:
 // Drop(0) < RecordOnly(1) < RecordAndSample(2).
 func TestSamplingDecisionOrdering(t *testing.T) {
-	if !(sdktrace.Drop < sdktrace.RecordOnly && sdktrace.RecordOnly < sdktrace.RecordAndSample) {
+	if sdktrace.Drop >= sdktrace.RecordOnly || sdktrace.RecordOnly >= sdktrace.RecordAndSample {
 		t.Fatalf("unexpected SamplingDecision ordering: Drop=%d, RecordOnly=%d, RecordAndSample=%d",
 			sdktrace.Drop, sdktrace.RecordOnly, sdktrace.RecordAndSample)
 	}
