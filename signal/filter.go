@@ -39,7 +39,10 @@ func RegisteredFilters() []Filter {
 	mu.RLock()
 	defer mu.RUnlock()
 
-	return filters
+	result := make([]Filter, len(filters))
+	copy(result, filters)
+
+	return result
 }
 
 func ClearFilters() {
