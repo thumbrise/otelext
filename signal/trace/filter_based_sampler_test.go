@@ -62,7 +62,7 @@ func TestFilterBasedTraceSamplerWithFilters(t *testing.T) {
 
 	result := sampler.ShouldSample(params)
 
-	// Since filter2 returns false (should not drop), the sampler should drop the trace
+	// Since filter1 returns true (should drop), the sampler should drop the trace
 	if result.Decision != sdktrace.Drop {
 		t.Errorf("Expected Drop, got %v", result.Decision)
 	}
@@ -126,10 +126,9 @@ func TestFilterBasedTraceSamplerWithEmptyAttributes(t *testing.T) {
 
 	result := sampler.ShouldSample(params)
 
-	// Filter returns true (should drop), but sampler logic is: if ANY filter returns false -> drop
-	// Since our filter returns true, sampler should NOT drop (RecordAndSample)
-	if result.Decision != sdktrace.RecordAndSample {
-		t.Errorf("Expected RecordAndSample (filter says drop, so sampler doesn't drop), got %v", result.Decision)
+	// Filter returns true (should drop), so sampler should drop the trace
+	if result.Decision != sdktrace.Drop {
+		t.Errorf("Expected Drop (filter says drop), got %v", result.Decision)
 	}
 }
 
@@ -140,9 +139,9 @@ func TestFilterBasedTraceSamplerWithMultipleFilters(t *testing.T) {
 
 	// Create multiple filters with different behaviors
 	filters := []*mock.Filter{
-		mock.NewFilter("f1", "Filter 1", true),
-		mock.NewFilter("f2", "Filter 2", false), // This will cause drop
-		mock.NewFilter("f3", "Filter 3", true),
+		mock.NewFilter("f1", "Filter 1", true),  // Should drop
+		mock.NewFilter("f2", "Filter 2", false), // Should not drop
+		mock.NewFilter("f3", "Filter 3", true),  // Should drop
 	}
 
 	for _, f := range filters {
@@ -160,8 +159,46 @@ func TestFilterBasedTraceSamplerWithMultipleFilters(t *testing.T) {
 
 	result := sampler.ShouldSample(params)
 
-	// Since filter2 returns false, the trace should be dropped
+	// Since filter1 and filter3 return true (should drop), the trace should be dropped
 	if result.Decision != sdktrace.Drop {
-		t.Errorf("Expected Drop due to filter2, got %v", result.Decision)
+		t.Errorf("Expected Drop due to filter1 and filter3, got %v", result.Decision)
+	}
+}
+
+// TestFilterBasedTraceSamplerAllFiltersPass tests when all filters pass (don't drop)
+func TestFilterBasedTraceSamplerAllFiltersPass(t *testing.T) {
+	// Clear filters for clean mocks
+	signal.ClearFilters()
+
+	// Create filters that all pass (don't drop)
+	filters := []*mock.Filter{
+		mock.NewFilter("f1", "Filter 1", false), // Should not drop
+		mock.NewFilter("f2", "Filter 2", false), // Should not drop
+		mock.NewFilter("f3", "Filter 3", false), // Should not drop
+	}
+
+	for _, f := range filters {
+		signal.RegisterFilter(f)
+	}
+
+	sampler := trace.NewFilterBasedSampler()
+
+	params := sdktrace.SamplingParameters{
+		ParentContext: context.Background(),
+		Attributes: []attribute.KeyValue{
+			attribute.String("test", "value"),
+		},
+	}
+
+	result := sampler.ShouldSample(params)
+
+	// All filters pass, so trace should be recorded and sampled
+	if result.Decision != sdktrace.RecordAndSample {
+		t.Errorf("Expected RecordAndSample when all filters pass, got %v", result.Decision)
+	}
+
+	// Attributes should be preserved
+	if len(result.Attributes) != 1 {
+		t.Errorf("Expected 1 attribute when recording, got %d", len(result.Attributes))
 	}
 }
