@@ -22,10 +22,9 @@ jobs:
     uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
     with:
       macro: '@autosolve'
-      LLM_MODEL: 'openrouter/deepseek/deepseek-chat-v3-0324:free'
+      LLM_MODEL: 'openrouter/auto'
       target_branch: 'main'
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       PAT_USERNAME: ${{ secrets.PAT_USERNAME }}
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
