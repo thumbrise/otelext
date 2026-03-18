@@ -1,12 +1,4 @@
-**{{subject}}**
-{{~#if hash}} ([{{shortHash}}]({{@root.host}}/{{@root.owner}}/{{@root.repository}}/commit/{{hash}})){{/if}}
-
-{{~#if body}}
-
-    {{body}}
-
-
-{{~/if}}
+- {{subject}}{{~#if hash}} ([{{shortHash}}]({{@root.host}}/{{@root.owner}}/{{@root.repository}}/commit/{{hash}})){{/if}}
 
 {{~#if references~}}
     closes
