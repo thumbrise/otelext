@@ -40,8 +40,9 @@ func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters)
 }
 
 func (s FilterBasedSampler) Description() string {
-	descriptions := make([]string, 0, len(signal.RegisteredFilters()))
-	for _, f := range signal.RegisteredFilters() {
+	registered := signal.RegisteredFilters()
+	descriptions := make([]string, 0, len(registered))
+	for _, f := range registered {
 		descriptions = append(descriptions, f.Description(context.Background()))
 	}
 
