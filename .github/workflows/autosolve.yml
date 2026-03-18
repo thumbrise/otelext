@@ -1,0 +1,32 @@
+name: Autosolve
+
+on:
+  issues:
+    types:
+      - labeled
+  issue_comment:
+    types:
+      - created      
+
+jobs:
+  ask-goose:
+    if: ${{ github.event.label.name == 'autosolve' || github.event.label.name == 'goose' || (github.event.issue.pull_request && (contains(github.event.comment.body, '@goose-ai') || contains(github.event.comment.body, '@autosolve'))) }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Goose Action
+        uses: michaelneale/goose-fix-it-action@main
+        with:
+          task_request: |
+            any description of the task (eg issue input, comments etc)
+          validation: "New tests are satisfying the real requirements and all tests passing including existing tests. Commit should be clean and follow conventional commits based on the changes and .commitlintrc.json."
+          create_pr: 'true'
+          update_pr: 'true'
+        env:
+            OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_TOKEN }}
+            GH_TOKEN: ${{ github.token }}
