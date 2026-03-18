@@ -2,6 +2,7 @@
 [![CI](https://github.com/thumbrise/otelext/actions/workflows/ci.yml/badge.svg)](https://github.com/thumbrise/otelext/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/thumbrise/otelext.svg)](https://pkg.go.dev/github.com/thumbrise/otelext)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Extensions for [OpenTelemetry Go SDK](https://opentelemetry.io/docs/languages/go/) — reusable filters and samplers for fine-grained telemetry control.
 ## Features
 - **Filter registry** — global, thread-safe registry of attribute-based filters (`signal.Filter` interface)
