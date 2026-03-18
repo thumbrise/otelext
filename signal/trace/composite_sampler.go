@@ -9,7 +9,7 @@ import (
 )
 
 type CompositeSampler struct {
-	Samplers []sdktrace.Sampler
+	samplers []sdktrace.Sampler
 }
 
 func NewCompositeSampler(samplers ...sdktrace.Sampler) *CompositeSampler {
@@ -17,11 +17,14 @@ func NewCompositeSampler(samplers ...sdktrace.Sampler) *CompositeSampler {
 		slog.Warn("no samplers passed in composite sampler, so always drop")
 	}
 
-	return &CompositeSampler{Samplers: samplers}
+	copied := make([]sdktrace.Sampler, len(samplers))
+	copy(copied, samplers)
+
+	return &CompositeSampler{samplers: copied}
 }
 
 func (r CompositeSampler) ShouldSample(parameters sdktrace.SamplingParameters) sdktrace.SamplingResult {
-	if len(r.Samplers) == 0 {
+	if len(r.samplers) == 0 {
 		return sdktrace.SamplingResult{
 			Decision:   sdktrace.Drop,
 			Attributes: nil,
@@ -30,7 +33,7 @@ func (r CompositeSampler) ShouldSample(parameters sdktrace.SamplingParameters) s
 	}
 
 	var res sdktrace.SamplingResult
-	for _, sampler := range r.Samplers {
+	for _, sampler := range r.samplers {
 		res = sampler.ShouldSample(parameters)
 		if res.Decision == sdktrace.Drop {
 			return res
@@ -41,12 +44,12 @@ func (r CompositeSampler) ShouldSample(parameters sdktrace.SamplingParameters) s
 }
 
 func (r CompositeSampler) Description() string {
-	if len(r.Samplers) == 0 {
+	if len(r.samplers) == 0 {
 		return "no samplers passed in composite sampler"
 	}
 
-	descriptions := make([]string, 0, len(r.Samplers))
-	for _, sampler := range r.Samplers {
+	descriptions := make([]string, 0, len(r.samplers))
+	for _, sampler := range r.samplers {
 		descriptions = append(descriptions, sampler.Description())
 	}
 
