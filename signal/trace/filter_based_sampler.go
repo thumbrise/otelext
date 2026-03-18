@@ -17,21 +17,24 @@ func NewFilterBasedSampler() *FilterBasedSampler {
 }
 
 func (s FilterBasedSampler) ShouldSample(parameters sdktrace.SamplingParameters) sdktrace.SamplingResult {
+	// Check if any filter wants to drop the trace
+	for _, f := range signal.RegisteredFilters() {
+		if f.ShouldDrop(parameters.ParentContext, attribute.NewSet(parameters.Attributes...)) {
+			return sdktrace.SamplingResult{
+				Decision:   sdktrace.Drop,
+				Attributes: nil,
+				Tracestate: trace.SpanContextFromContext(parameters.ParentContext).TraceState(),
+			}
+		}
+	}
+
+	// No filters dropped, record and sample
 	psc := trace.SpanContextFromContext(parameters.ParentContext)
-	result := sdktrace.SamplingResult{
+	return sdktrace.SamplingResult{
 		Decision:   sdktrace.RecordAndSample,
 		Attributes: parameters.Attributes,
 		Tracestate: psc.TraceState(),
 	}
-
-	for _, f := range signal.RegisteredFilters() {
-		if !f.ShouldDrop(parameters.ParentContext, attribute.NewSet(parameters.Attributes...)) {
-			result.Decision = sdktrace.Drop
-			result.Attributes = nil
-		}
-	}
-
-	return result
 }
 
 func (s FilterBasedSampler) Description() string {
