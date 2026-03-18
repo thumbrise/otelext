@@ -2,15 +2,15 @@ name: Autosolve
 
 on:
   issues:
-    types:
-      - labeled
+    types: [labeled]
   issue_comment:
-    types:
-      - created      
+    types: [created]
 
 jobs:
   ask-goose:
-    if: ${{ github.event.label.name == 'autosolve' || github.event.label.name == 'goose' || (github.event.issue.pull_request && (contains(github.event.comment.body, '@goose-ai') || contains(github.event.comment.body, '@autosolve'))) }}
+    if: |
+      contains(github.event.label.name, 'autosolve') || 
+      contains(github.event.comment.body, '@goose')
     runs-on: ubuntu-latest
 
     steps:
@@ -19,14 +19,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Goose Action
-        uses: michaelneale/goose-fix-it-action@main
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          task_request: |
-            any description of the task (eg issue input, comments etc)
-          validation: "New tests are satisfying the real requirements and all tests passing including existing tests. Commit should be clean and follow conventional commits based on the changes and .commitlintrc.json."
-          create_pr: 'true'
-          update_pr: 'true'
+          python-version: '3.12'
+
+      - name: Install goose
+        run: |
+          pip install --upgrade pip
+          pip install goose-ai
+
+      - name: Run goose on issue
+        run: |
+          goose run \
+            --issue ${{ github.event.issue.number }} \
+            --model openrouter/deepseek-coder \
+            --validation "New tests satisfy requirements and all tests pass. Commit with conventional commit message." \
+            --yes
         env:
-            OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_TOKEN }}
-            GH_TOKEN: ${{ github.token }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
